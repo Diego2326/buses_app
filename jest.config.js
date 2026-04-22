@@ -1,3 +1,7 @@
 module.exports = {
-  preset: '@react-native/jest-preset',
+  preset: 'react-native',
+  setupFiles: ['./jest.setup.js'],
+  transformIgnorePatterns: [
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|@react-navigation|react-native-screens|react-native-safe-area-context|@react-native-async-storage|expo|expo-camera|expo-status-bar|@expo)/)',
+  ],
 };

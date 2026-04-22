@@ -1,4 +1,36 @@
 {
-  "name": "buses_app",
-  "displayName": "buses_app"
+  "expo": {
+    "name": "BusPay Pasajeros",
+    "slug": "buses-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#F7F8FA",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "bundleIdentifier": "com.busesapp.passenger",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "BusPay usa la cámara para escanear el QR del bus y consultar la tarifa del viaje."
+      }
+    },
+    "android": {
+      "package": "com.busesapp.passenger",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "BusPay usa la cámara para escanear el QR del bus y consultar la tarifa del viaje."
+        }
+      ]
+    ],
+    "extra": {
+      "apiBaseUrl": "https://api.example.com"
+    }
+  }
 }
