@@ -4,12 +4,13 @@ import {
   type BarcodeScanningResult,
 } from 'expo-camera';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { AppTextInput } from '../../components/AppTextInput';
 import { Screen } from '../../components/Screen';
-import { colors } from '../../theme/colors';
+import { useThemeStore } from '../../store/themeStore';
+import { getThemeColors } from '../../theme/colors';
 import type { ScannerScreenProps } from '../../types/navigation';
 
 export function ScannerScreen({navigation}: ScannerScreenProps) {
@@ -17,6 +18,10 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
   const [busCode, setBusCode] = useState('BUS-001');
   const [error, setError] = useState('');
   const [scanned, setScanned] = useState(false);
+  const mode = useThemeStore(state => state.mode);
+  const palette = getThemeColors(mode);
+  const {width} = useWindowDimensions();
+  const frameSize = Math.min(width * 0.78, 300);
 
   const openPreview = (value: string) => {
     const normalized = value.trim().toUpperCase();
@@ -45,8 +50,32 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
 
   return (
     <Screen>
-      <View style={styles.scanner}>
-        <View style={styles.scanFrame}>
+      <View style={styles.header}>
+        <Text style={[styles.kicker, {color: palette.primary}]}>Pago rápido</Text>
+        <Text style={[styles.title, {color: palette.text}]}>Escanea el QR del bus</Text>
+        <Text style={[styles.description, {color: palette.textMuted}]}>
+          Apunta al código dentro del marco para obtener la tarifa al instante.
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.scannerCard,
+          {
+            backgroundColor: palette.surface,
+            borderColor: palette.border,
+          },
+        ]}>
+        <View
+          style={[
+            styles.scanFrame,
+            {
+              backgroundColor: palette.surfaceMuted,
+              borderColor: palette.primary,
+              width: frameSize,
+              height: frameSize,
+            },
+          ]}>
           {canUseCamera ? (
             <CameraView
               barcodeScannerSettings={{barcodeTypes: ['qr']}}
@@ -54,17 +83,52 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
               style={styles.camera}
             />
           ) : (
-            <Text style={styles.scanText}>QR</Text>
+            <Text style={[styles.scanText, {color: palette.primary}]}>QR</Text>
           )}
+          <View pointerEvents="none" style={styles.scanOverlay}>
+            <View
+              style={[styles.corner, styles.cornerTopLeft, {borderColor: palette.primary}]}
+            />
+            <View
+              style={[styles.corner, styles.cornerTopRight, {borderColor: palette.primary}]}
+            />
+            <View
+              style={[styles.corner, styles.cornerBottomLeft, {borderColor: palette.primary}]}
+            />
+            <View
+              style={[styles.corner, styles.cornerBottomRight, {borderColor: palette.primary}]}
+            />
+          </View>
         </View>
-        <Text style={styles.title}>Escáner QR</Text>
-        <Text style={styles.description}>
-          El QR contiene solo el identificador del bus. También puedes escribirlo
-          manualmente para probar el flujo.
-        </Text>
+        <View style={styles.statusRow}>
+          <View
+            style={[
+              styles.statusDot,
+              {backgroundColor: canUseCamera ? palette.success : palette.warning},
+            ]}
+          />
+          <Text style={[styles.statusText, {color: palette.textMuted}]}>
+            {canUseCamera
+              ? scanned
+                ? 'Escaneo pausado. Toca "Escanear nuevamente".'
+                : 'Cámara activa y lista para escanear.'
+              : 'Cámara sin permiso. Habilítala para escanear.'}
+          </Text>
+        </View>
       </View>
 
-      <View style={styles.form}>
+      <View
+        style={[
+          styles.formCard,
+          {
+            backgroundColor: palette.surface,
+            borderColor: palette.border,
+          },
+        ]}>
+        <Text style={[styles.formTitle, {color: palette.text}]}>Ingreso manual</Text>
+        <Text style={[styles.formDescription, {color: palette.textMuted}]}>
+          Si el QR no se lee, escribe el código con formato BUS-001.
+        </Text>
         {!permission?.granted ? (
           <AppButton
             onPress={requestPermission}
@@ -93,8 +157,8 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
             setBusCode('BUS-002');
             navigation.navigate('PaymentPreview', {busCode: 'BUS-002'});
           }}
-          title="Simular BUS-002"
-          variant="secondary"
+          title="Usar ejemplo BUS-002"
+          variant="ghost"
         />
       </View>
     </Screen>
@@ -102,21 +166,37 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  scanner: {
-    alignItems: 'center',
+  header: {
     gap: 12,
+  },
+  kicker: {
+    fontSize: 13,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '900',
+    lineHeight: 34,
+  },
+  description: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  scannerCard: {
+    alignItems: 'center',
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 12,
+    padding: 16,
   },
   scanFrame: {
     alignItems: 'center',
-    aspectRatio: 1,
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-    borderRadius: 8,
+    borderRadius: 18,
     borderWidth: 2,
     justifyContent: 'center',
-    maxWidth: 260,
     overflow: 'hidden',
-    width: '78%',
   },
   camera: {
     bottom: 0,
@@ -126,22 +206,69 @@ const styles = StyleSheet.create({
     top: 0,
   },
   scanText: {
-    color: colors.primary,
     fontSize: 42,
     fontWeight: '900',
   },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: '900',
+  scanOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
-  description: {
-    color: colors.textMuted,
+  corner: {
+    borderRadius: 10,
+    borderWidth: 4,
+    height: 36,
+    position: 'absolute',
+    width: 36,
+  },
+  cornerTopLeft: {
+    borderBottomWidth: 0,
+    borderRightWidth: 0,
+    left: 14,
+    top: 14,
+  },
+  cornerTopRight: {
+    borderBottomWidth: 0,
+    borderLeftWidth: 0,
+    right: 14,
+    top: 14,
+  },
+  cornerBottomLeft: {
+    borderRightWidth: 0,
+    borderTopWidth: 0,
+    bottom: 14,
+    left: 14,
+  },
+  cornerBottomRight: {
+    borderLeftWidth: 0,
+    borderTopWidth: 0,
+    bottom: 14,
+    right: 14,
+  },
+  statusRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statusDot: {
+    borderRadius: 99,
+    height: 8,
+    width: 8,
+  },
+  statusText: {
     fontSize: 15,
-    lineHeight: 22,
     textAlign: 'center',
   },
-  form: {
+  formCard: {
+    borderRadius: 16,
+    borderWidth: 1,
     gap: 14,
+    padding: 16,
+  },
+  formTitle: {
+    fontSize: 19,
+    fontWeight: '800',
+  },
+  formDescription: {
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

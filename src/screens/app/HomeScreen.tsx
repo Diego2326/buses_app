@@ -41,6 +41,7 @@ export function HomeScreen({navigation}: HomeScreenProps) {
 
   const compactProgress = useRef(new Animated.Value(0)).current;
   const [sheetSnap, setSheetSnap] = useState<'expanded' | 'compact'>('expanded');
+  const [mapRecenterSignal, setMapRecenterSignal] = useState(0);
   const expandedHiddenOffset = useMemo(() => Math.max(410, height * 0.66), [height]);
 
   const expandedTranslateY = useMemo(
@@ -124,6 +125,7 @@ export function HomeScreen({navigation}: HomeScreenProps) {
         bottomOffsetPx={mapBottomOffsetPx}
         currentLocation={currentLocation}
         onMapInteract={compactPanel}
+        recenterSignal={mapRecenterSignal}
         targetScreenRatio={targetScreenRatio}
       />
 
@@ -138,22 +140,41 @@ export function HomeScreen({navigation}: HomeScreenProps) {
               : 'Buses en vivo'}
           </Text>
         </GlassPanel>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => navigation.navigate('Profile')}
-          style={({pressed}) => [
-            styles.avatar,
-            {
-              backgroundColor: palette.glass,
-              borderColor: palette.glassBorder,
-              shadowColor: palette.text,
-            },
-            pressed && styles.pressed,
-          ]}>
-          <Text style={[styles.avatarText, {color: palette.primary}]}>
-            {(user?.nombre ?? 'P').slice(0, 1).toUpperCase()}
-          </Text>
-        </Pressable>
+        <View style={styles.topBarActions}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => navigation.navigate('Profile')}
+            style={({pressed}) => [
+              styles.avatar,
+              {
+                backgroundColor: palette.glass,
+                borderColor: palette.glassBorder,
+                shadowColor: palette.text,
+              },
+              pressed && styles.pressed,
+            ]}>
+            <Text style={[styles.avatarText, {color: palette.primary}]}>
+              {(user?.nombre ?? 'P').slice(0, 1).toUpperCase()}
+            </Text>
+          </Pressable>
+          <Pressable
+            accessibilityLabel="Centrar en mi ubicación"
+            accessibilityRole="button"
+            onPress={() => setMapRecenterSignal(value => value + 1)}
+            style={({pressed}) => [
+              styles.locationButton,
+              {
+                backgroundColor: palette.glass,
+                borderColor: palette.glassBorder,
+                shadowColor: palette.text,
+              },
+              pressed && styles.pressed,
+            ]}>
+            <View style={[styles.locationIconOuter, {borderColor: palette.primary}]}>
+              <View style={[styles.locationIconInner, {backgroundColor: palette.primary}]} />
+            </View>
+          </Pressable>
+        </View>
       </View>
 
       <Animated.View
@@ -392,6 +413,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  topBarActions: {
+    alignItems: 'center',
+    flexDirection: 'column',
+    gap: 10,
+  },
+  locationButton: {
+    alignItems: 'center',
+    borderRadius: 20,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: 'center',
+    shadowOffset: {width: 0, height: 12},
+    shadowOpacity: 0.14,
+    shadowRadius: 22,
+    width: 40,
+  },
+  locationIconOuter: {
+    alignItems: 'center',
+    borderRadius: 9,
+    borderWidth: 2.2,
+    height: 18,
+    justifyContent: 'center',
+    width: 18,
+  },
+  locationIconInner: {
+    borderRadius: 3,
+    height: 6,
+    width: 6,
+  },
   locationLabel: {
     fontSize: 12,
     fontWeight: '800',
@@ -402,17 +452,17 @@ const styles = StyleSheet.create({
   },
   avatar: {
     alignItems: 'center',
-    borderRadius: 24,
+    borderRadius: 30,
     borderWidth: 1,
-    height: 48,
+    height: 60,
     justifyContent: 'center',
-    shadowOffset: {width: 0, height: 12},
-    shadowOpacity: 0.14,
-    shadowRadius: 22,
-    width: 48,
+    shadowOffset: {width: 0, height: 14},
+    shadowOpacity: 0.16,
+    shadowRadius: 24,
+    width: 60,
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '900',
   },
   pressed: {

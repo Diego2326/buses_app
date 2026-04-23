@@ -11,7 +11,7 @@ import {
   useMap,
   useMapEvents,
 } from 'react-leaflet';
-import { Fragment, useEffect } from 'react';
+import { Fragment, useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { liveBusMarkers, zacapaCenter } from '../mocks/liveBuses';
@@ -53,12 +53,14 @@ const routeTraffic: [number, number][] = [
   [14.9742, -89.5302],
   [14.9755, -89.5279],
 ];
+const DEFAULT_MAP_ZOOM = 16.25;
 
 type LiveMapBackgroundProps = {
   currentLocation: CurrentLocation;
   bottomOffsetPx?: number;
   targetScreenRatio?: number;
   onMapInteract?: () => void;
+  recenterSignal?: number;
 };
 
 function MapInteractionLayer({onMapInteract}: {onMapInteract?: () => void}) {
@@ -74,15 +76,21 @@ function MapInteractionLayer({onMapInteract}: {onMapInteract?: () => void}) {
 function RecenterMap({
   currentLocation,
   bottomOffsetPx = 320,
+  recenterSignal = 0,
 }: {
   currentLocation: CurrentLocation;
   bottomOffsetPx?: number;
+  recenterSignal?: number;
 }) {
   const map = useMap();
+  const lastRecenterSignal = useRef(recenterSignal);
   const lat = currentLocation.latitude;
   const lng = currentLocation.longitude;
 
   useEffect(() => {
+    const shouldResetZoom = recenterSignal !== lastRecenterSignal.current;
+    lastRecenterSignal.current = recenterSignal;
+    const targetZoom = shouldResetZoom ? DEFAULT_MAP_ZOOM : map.getZoom();
     const mapSize = map.getSize();
     const menuTopY = mapSize.y - bottomOffsetPx;
     const gapAboveMenu = 1000;
@@ -96,15 +104,15 @@ function RecenterMap({
     // Move map center so current location appears at desiredY on screen.
     const offset = mapSize.y * 0.5 - desiredY;
 
-    const point = map.project([lat, lng], map.getZoom());
+    const point = map.project([lat, lng], targetZoom);
     const adjustedPoint = point.add([0, offset]);
-    const adjustedLatLng = map.unproject(adjustedPoint, map.getZoom());
+    const adjustedLatLng = map.unproject(adjustedPoint, targetZoom);
 
-    map.setView(adjustedLatLng, map.getZoom(), {
+    map.setView(adjustedLatLng, targetZoom, {
       animate: true,
       duration: 0.85,
     });
-  }, [bottomOffsetPx, lat, lng, map]);
+  }, [bottomOffsetPx, lat, lng, map, recenterSignal]);
 
   return null;
 }
@@ -114,6 +122,7 @@ export function LiveMapBackground({
   bottomOffsetPx,
   targetScreenRatio: _targetScreenRatio,
   onMapInteract,
+  recenterSignal,
 }: LiveMapBackgroundProps) {
   const mode = useThemeStore(state => state.mode);
   const palette = getThemeColors(mode);
@@ -201,13 +210,14 @@ export function LiveMapBackground({
         minZoom={14}
         scrollWheelZoom
         style={styles.map}
-        zoom={16.25}
+        zoom={DEFAULT_MAP_ZOOM}
         zoomDelta={0.25}
         zoomSnap={0.25}
         zoomControl={false}>
         <RecenterMap
           bottomOffsetPx={bottomOffsetPx}
           currentLocation={currentLocation}
+          recenterSignal={recenterSignal}
         />
         <MapInteractionLayer onMapInteract={onMapInteract} />
         <TileLayer

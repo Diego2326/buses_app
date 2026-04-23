@@ -12,6 +12,7 @@ type LiveMapBackgroundProps = {
   bottomOffsetPx?: number;
   targetScreenRatio?: number;
   onMapInteract?: () => void;
+  recenterSignal?: number;
 };
 
 export function LiveMapBackground({
@@ -19,6 +20,7 @@ export function LiveMapBackground({
   bottomOffsetPx: _bottomOffsetPx = 320,
   targetScreenRatio = 0.42,
   onMapInteract,
+  recenterSignal: _recenterSignal,
 }: LiveMapBackgroundProps) {
   const mode = useThemeStore(state => state.mode);
   const palette = getThemeColors(mode);

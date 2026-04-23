@@ -18,38 +18,18 @@ export function AppNavigator({Stack}: AppNavigatorProps) {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShadowVisible: false,
-        headerStyle: {backgroundColor: '#F7F8FA'},
-        headerTitleStyle: {fontWeight: '800'},
+        fullScreenGestureEnabled: true,
+        gestureEnabled: true,
+        headerShown: false,
       }}>
-      <Stack.Screen component={HomeScreen} name="Home" options={{title: 'Inicio'}} />
-      <Stack.Screen component={ScannerScreen} name="Scanner" options={{title: 'Escanear QR'}} />
-      <Stack.Screen
-        component={AddFundsScreen}
-        name="AddFunds"
-        options={{title: 'Agregar saldo'}}
-      />
-      <Stack.Screen
-        component={PaymentPreviewScreen}
-        name="PaymentPreview"
-        options={{title: 'Vista previa'}}
-      />
-      <Stack.Screen
-        component={PaymentConfirmationScreen}
-        name="PaymentConfirmation"
-        options={{headerBackVisible: false, title: 'Pago confirmado'}}
-      />
-      <Stack.Screen
-        component={PaymentHistoryScreen}
-        name="PaymentHistory"
-        options={{title: 'Historial'}}
-      />
-      <Stack.Screen
-        component={PaymentDetailScreen}
-        name="PaymentDetail"
-        options={{title: 'Detalle del pago'}}
-      />
-      <Stack.Screen component={ProfileScreen} name="Profile" options={{title: 'Perfil'}} />
+      <Stack.Screen component={HomeScreen} name="Home" />
+      <Stack.Screen component={ScannerScreen} name="Scanner" />
+      <Stack.Screen component={AddFundsScreen} name="AddFunds" />
+      <Stack.Screen component={PaymentPreviewScreen} name="PaymentPreview" />
+      <Stack.Screen component={PaymentConfirmationScreen} name="PaymentConfirmation" />
+      <Stack.Screen component={PaymentHistoryScreen} name="PaymentHistory" />
+      <Stack.Screen component={PaymentDetailScreen} name="PaymentDetail" />
+      <Stack.Screen component={ProfileScreen} name="Profile" />
     </Stack.Navigator>
   );
 }

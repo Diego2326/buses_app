@@ -12,19 +12,14 @@ export function AuthNavigator({Stack}: AuthNavigatorProps) {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShadowVisible: false,
-        headerStyle: {backgroundColor: '#F7F8FA'},
-        headerTitleStyle: {fontWeight: '800'},
+        fullScreenGestureEnabled: true,
+        gestureEnabled: true,
+        headerShown: false,
       }}>
-      <Stack.Screen
-        component={LoginScreen}
-        name="Login"
-        options={{headerShown: false}}
-      />
+      <Stack.Screen component={LoginScreen} name="Login" />
       <Stack.Screen
         component={RegisterScreen}
         name="Register"
-        options={{title: 'Crear cuenta'}}
       />
     </Stack.Navigator>
   );
