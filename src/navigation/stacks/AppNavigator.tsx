@@ -1,5 +1,6 @@
 import type { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { AddFundsScreen } from '../../screens/app/AddFundsScreen';
 import { HomeScreen } from '../../screens/app/HomeScreen';
 import { PaymentConfirmationScreen } from '../../screens/app/PaymentConfirmationScreen';
 import { PaymentDetailScreen } from '../../screens/app/PaymentDetailScreen';
@@ -23,6 +24,11 @@ export function AppNavigator({Stack}: AppNavigatorProps) {
       }}>
       <Stack.Screen component={HomeScreen} name="Home" options={{title: 'Inicio'}} />
       <Stack.Screen component={ScannerScreen} name="Scanner" options={{title: 'Escanear QR'}} />
+      <Stack.Screen
+        component={AddFundsScreen}
+        name="AddFunds"
+        options={{title: 'Agregar saldo'}}
+      />
       <Stack.Screen
         component={PaymentPreviewScreen}
         name="PaymentPreview"

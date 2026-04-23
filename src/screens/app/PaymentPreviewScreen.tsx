@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
@@ -7,6 +8,7 @@ import { StateView } from '../../components/StateView';
 import { usePaymentPreview } from '../../hooks/usePaymentPreview';
 import { useAuthStore } from '../../store/authStore';
 import { usePaymentStore } from '../../store/paymentStore';
+import { useWalletStore } from '../../store/walletStore';
 import { colors } from '../../theme/colors';
 import { formatCurrency } from '../../utils/format';
 import type { PaymentPreviewScreenProps } from '../../types/navigation';
@@ -14,7 +16,10 @@ import type { PaymentPreviewScreenProps } from '../../types/navigation';
 export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenProps) {
   const user = useAuthStore(state => state.user);
   const addPayment = usePaymentStore(state => state.addPaymentFromPreview);
+  const debit = useWalletStore(state => state.debit);
   const {data, error, isLoading, refetch} = usePaymentPreview(route.params.busCode);
+  const balance = useWalletStore(state => state.balance);
+  const [paymentError, setPaymentError] = useState('');
 
   if (isLoading) {
     return (
@@ -41,6 +46,14 @@ export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenPr
       return;
     }
 
+    setPaymentError('');
+    const debited = debit(data.monto);
+
+    if (!debited) {
+      setPaymentError('Saldo insuficiente. Agrega fondos para completar el pago.');
+      return;
+    }
+
     const payment = addPayment(data, user);
     navigation.replace('PaymentConfirmation', {paymentId: payment.id});
   };
@@ -58,10 +71,19 @@ export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenPr
         <InfoRow label="Origen" value={data.bus.ruta.origen} />
         <InfoRow label="Destino" value={data.bus.ruta.destino} />
         <InfoRow label="Tarifa" value={data.tarifa.nombre} />
+        <InfoRow label="Saldo disponible" value={formatCurrency(balance)} />
         <InfoRow label="Monto" strong value={formatCurrency(data.monto)} />
       </View>
 
+      {paymentError ? <Text style={styles.error}>{paymentError}</Text> : null}
       <AppButton onPress={confirm} title="Confirmar pago" />
+      {paymentError ? (
+        <AppButton
+          onPress={() => navigation.navigate('AddFunds')}
+          title="Agregar saldo"
+          variant="secondary"
+        />
+      ) : null}
       <AppButton onPress={() => navigation.goBack()} title="Cancelar" variant="ghost" />
     </Screen>
   );
@@ -87,5 +109,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     paddingHorizontal: 16,
+  },
+  error: {
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

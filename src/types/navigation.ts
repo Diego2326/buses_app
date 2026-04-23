@@ -10,6 +10,7 @@ export type AuthStackParamList = {
 export type AppStackParamList = {
   Home: undefined;
   Scanner: undefined;
+  AddFunds: undefined;
   PaymentPreview: { busCode: string };
   PaymentConfirmation: { paymentId: string };
   PaymentHistory: undefined;
@@ -23,6 +24,7 @@ export type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login
 export type RegisterScreenProps = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 export type HomeScreenProps = NativeStackScreenProps<AppStackParamList, 'Home'>;
 export type ScannerScreenProps = NativeStackScreenProps<AppStackParamList, 'Scanner'>;
+export type AddFundsScreenProps = NativeStackScreenProps<AppStackParamList, 'AddFunds'>;
 export type PaymentPreviewScreenProps = NativeStackScreenProps<
   AppStackParamList,
   'PaymentPreview'

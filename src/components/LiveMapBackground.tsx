@@ -1,15 +1,38 @@
-import { StyleSheet, Text, View } from 'react-native';
+/* eslint-disable react-native/no-inline-styles */
 
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+
+import type { CurrentLocation } from '../hooks/useCurrentLocation';
 import { liveBusMarkers, zacapaCenter } from '../mocks/liveBuses';
 import { useThemeStore } from '../store/themeStore';
 import { getThemeColors } from '../theme/colors';
 
-export function LiveMapBackground() {
+type LiveMapBackgroundProps = {
+  currentLocation: CurrentLocation;
+  bottomOffsetPx?: number;
+  targetScreenRatio?: number;
+  onMapInteract?: () => void;
+};
+
+export function LiveMapBackground({
+  currentLocation,
+  bottomOffsetPx: _bottomOffsetPx = 320,
+  targetScreenRatio = 0.42,
+  onMapInteract,
+}: LiveMapBackgroundProps) {
   const mode = useThemeStore(state => state.mode);
   const palette = getThemeColors(mode);
+  const currentTop = Math.min(62, Math.max(36, targetScreenRatio * 100));
+  const currentLabelTop = currentTop + 8;
+  const markerPalette =
+    mode === 'dark'
+      ? ['#2DD4BF', '#60A5FA', '#F59E0B']
+      : ['#0F766E', '#2563EB', '#D97706'];
 
   return (
-    <View style={[styles.map, {backgroundColor: palette.mapBackground}]}>
+    <Pressable
+      onPress={onMapInteract}
+      style={[styles.map, {backgroundColor: palette.mapBackground}]}>
       <View style={[styles.gridOverlay, {backgroundColor: palette.mapOverlay}]} />
       <View
         style={[
@@ -17,8 +40,8 @@ export function LiveMapBackground() {
           {
             backgroundColor:
               mode === 'dark'
-                ? 'rgba(45,212,191,0.54)'
-                : 'rgba(15,118,110,0.68)',
+                ? 'rgba(96,165,250,0.68)'
+                : 'rgba(37,99,235,0.62)',
           },
         ]}
       />
@@ -28,8 +51,19 @@ export function LiveMapBackground() {
           {
             backgroundColor:
               mode === 'dark'
-                ? 'rgba(245,158,11,0.48)'
-                : 'rgba(217,119,6,0.62)',
+                ? 'rgba(34,211,238,0.54)'
+                : 'rgba(20,184,166,0.54)',
+          },
+        ]}
+      />
+      <View
+        style={[
+          styles.routeC,
+          {
+            backgroundColor:
+              mode === 'dark'
+                ? 'rgba(245,158,11,0.44)'
+                : 'rgba(217,119,6,0.48)',
           },
         ]}
       />
@@ -47,9 +81,9 @@ export function LiveMapBackground() {
             styles.busMarker,
             {
               left: `${28 + index * 20}%`,
-              top: `${42 + (index % 2) * 16}%`,
-              backgroundColor: palette.primary,
-              borderColor: mode === 'dark' ? '#071111' : '#FFFFFF',
+              top: `${34 + (index % 2) * 16}%`,
+              backgroundColor: markerPalette[index % markerPalette.length],
+              borderColor: mode === 'dark' ? '#091420' : '#FFFFFF',
               shadowColor: palette.text,
             },
           ]}>
@@ -65,7 +99,29 @@ export function LiveMapBackground() {
       <Text style={[styles.coordinates, {color: palette.textMuted}]}>
         {zacapaCenter.latitude.toFixed(4)}, {zacapaCenter.longitude.toFixed(4)}
       </Text>
-    </View>
+      <View
+        style={[
+          styles.currentLocation,
+          {
+            left:
+              currentLocation.source === 'gps'
+                ? '51%'
+                : '48%',
+            top: `${currentTop}%`,
+            backgroundColor: '#3B82F6',
+            borderColor: '#FFFFFF',
+          },
+        ]}>
+        <Text style={styles.currentLocationText}>•</Text>
+      </View>
+      <Text
+        style={[
+          styles.currentLocationLabel,
+          {color: palette.text, top: `${currentLabelTop}%`},
+        ]}>
+        {currentLocation.source === 'gps' ? 'Tu ubicación' : 'Referencia'}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -92,6 +148,14 @@ const styles = StyleSheet.create({
     top: '65%',
     transform: [{rotate: '22deg'}],
     width: '145%',
+  },
+  routeC: {
+    height: 6,
+    left: '-8%',
+    position: 'absolute',
+    top: '41%',
+    transform: [{rotate: '11deg'}],
+    width: '126%',
   },
   centerPin: {
     borderRadius: 18,
@@ -127,6 +191,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     left: 24,
+    position: 'absolute',
+  },
+  currentLocation: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: 4,
+    height: 24,
+    justifyContent: 'center',
+    position: 'absolute',
+    width: 24,
+  },
+  currentLocationText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    lineHeight: 18,
+  },
+  currentLocationLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    left: '42%',
     position: 'absolute',
   },
 });

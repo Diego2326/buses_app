@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { useThemeStore } from '../store/themeStore';
 import { getThemeColors } from '../theme/colors';
 
 type GlassPanelProps = {
   children: ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 export function GlassPanel({children, style}: GlassPanelProps) {
