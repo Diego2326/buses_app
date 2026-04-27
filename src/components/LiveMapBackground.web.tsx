@@ -53,7 +53,7 @@ const routeTraffic: [number, number][] = [
   [14.9742, -89.5302],
   [14.9755, -89.5279],
 ];
-const DEFAULT_MAP_ZOOM = 16.25;
+const DEFAULT_MAP_ZOOM = 17;
 
 type LiveMapBackgroundProps = {
   currentLocation: CurrentLocation;
