@@ -58,6 +58,21 @@ export type Fare = {
   status: OperationalStatus;
 };
 
+export type Wallet = {
+  balance: number;
+  currency: string;
+};
+
+export type WalletTransactionType = 'TOP_UP' | 'PAYMENT' | 'REFUND' | 'ADJUSTMENT';
+
+export type WalletTransaction = {
+  id: string;
+  type: WalletTransactionType;
+  amount: number;
+  date: string;
+  status: PaymentStatus | 'COMPLETED';
+};
+
 export type Payment = {
   id: string;
   userId?: string;

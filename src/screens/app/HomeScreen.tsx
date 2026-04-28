@@ -21,9 +21,9 @@ import { StateView } from '../../components/StateView';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
 import { getLiveBusMarkers } from '../../services/operationsService';
 import { listPayments } from '../../services/paymentService';
+import { getWallet } from '../../services/walletService';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
-import { useWalletStore } from '../../store/walletStore';
 import { getThemeColors } from '../../theme/colors';
 import { formatCurrency } from '../../utils/format';
 import type { HomeScreenProps } from '../../types/navigation';
@@ -31,7 +31,6 @@ import type { HomeScreenProps } from '../../types/navigation';
 export function HomeScreen({navigation}: HomeScreenProps) {
   const {height, width} = useWindowDimensions();
   const user = useAuthStore(state => state.user);
-  const balance = useWalletStore(state => state.balance);
   const mode = useThemeStore(state => state.mode);
   const palette = getThemeColors(mode);
   const isDark = mode === 'dark';
@@ -45,6 +44,10 @@ export function HomeScreen({navigation}: HomeScreenProps) {
   const {data: liveBuses = []} = useQuery({
     queryKey: ['live-buses'],
     queryFn: getLiveBusMarkers,
+  });
+  const {data: wallet} = useQuery({
+    queryKey: ['wallet'],
+    queryFn: getWallet,
   });
   const latestPayment = paymentsResponse?.content[0];
 
@@ -237,10 +240,10 @@ export function HomeScreen({navigation}: HomeScreenProps) {
             <View style={[styles.balanceCard, isLandscape && styles.balanceCardLandscape]}>
               <View>
                 <Text style={[styles.balanceLabel, {color: palette.textMuted}]}>
-                  Saldo local
+                  Saldo disponible
                 </Text>
                 <Text style={[styles.balanceValue, {color: palette.text}]}>
-                  {formatCurrency(balance)}
+                  {formatCurrency(wallet?.balance ?? 0)}
                 </Text>
               </View>
               <Pressable
@@ -382,10 +385,10 @@ export function HomeScreen({navigation}: HomeScreenProps) {
               ]}>
               <View style={styles.compactBalanceContent}>
                 <Text style={[styles.compactBalanceLabel, {color: palette.textMuted}]}>
-                  Saldo actual
+                  Saldo disponible
                 </Text>
                 <Text style={[styles.compactBalanceValue, {color: palette.text}]}>
-                  {formatCurrency(balance)}
+                  {formatCurrency(wallet?.balance ?? 0)}
                 </Text>
               </View>
               <Pressable

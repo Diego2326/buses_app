@@ -81,7 +81,14 @@ export async function logout() {
 }
 
 export async function register(_: RegisterInput): Promise<AuthResult> {
-  throw new Error(
-    'El backend actual no permite registro público. Solicita a operaciones que cree tu usuario.',
-  );
+  try {
+    const {data} = await apiClient.post<LoginResponse>('/auth/register', _);
+
+    return {
+      token: data.token,
+      user: mapUser(data.user),
+    };
+  } catch (error) {
+    throw new Error(getErrorMessage(error, 'No fue posible registrar la cuenta.'));
+  }
 }

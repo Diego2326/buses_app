@@ -1,3 +1,4 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -5,38 +6,57 @@ import { AppButton } from '../../components/AppButton';
 import { AppTextInput } from '../../components/AppTextInput';
 import { GlassPanel } from '../../components/GlassPanel';
 import { Screen } from '../../components/Screen';
+import { getWallet, topUpWallet } from '../../services/walletService';
 import { useThemeStore } from '../../store/themeStore';
-import { useWalletStore } from '../../store/walletStore';
-import { getThemeColors } from '../../theme/colors';
+import { colors, getThemeColors } from '../../theme/colors';
 import { formatCurrency } from '../../utils/format';
 import type { AddFundsScreenProps } from '../../types/navigation';
 
 const presetAmounts = [10, 20, 50, 100];
 
 export function AddFundsScreen({navigation}: AddFundsScreenProps) {
-  const balance = useWalletStore(state => state.balance);
-  const addFunds = useWalletStore(state => state.addFunds);
+  const queryClient = useQueryClient();
   const mode = useThemeStore(state => state.mode);
   const palette = getThemeColors(mode);
   const [amount, setAmount] = useState('20');
+  const [formError, setFormError] = useState('');
+  const {data: wallet} = useQuery({
+    queryKey: ['wallet'],
+    queryFn: getWallet,
+  });
+  const mutation = useMutation({
+    mutationFn: (parsedAmount: number) =>
+      topUpWallet({
+        amount: parsedAmount,
+        method: 'CARD',
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({queryKey: ['wallet']});
+      await queryClient.invalidateQueries({queryKey: ['wallet-transactions']});
+      navigation.goBack();
+    },
+    onError: error =>
+      setFormError(error instanceof Error ? error.message : 'No fue posible agregar saldo.'),
+  });
 
   const submit = () => {
+    setFormError('');
     const parsed = Number(amount);
 
     if (!Number.isFinite(parsed) || parsed <= 0) {
+      setFormError('Ingresa un monto válido.');
       return;
     }
 
-    addFunds(parsed);
-    navigation.goBack();
+    mutation.mutate(parsed);
   };
 
   return (
     <Screen style={styles.screen}>
       <GlassPanel style={styles.balanceCard}>
-        <Text style={[styles.label, {color: palette.textMuted}]}>Saldo local</Text>
+        <Text style={[styles.label, {color: palette.textMuted}]}>Saldo disponible</Text>
         <Text style={[styles.balance, {color: palette.text}]}>
-          {formatCurrency(balance)}
+          {formatCurrency(wallet?.balance ?? 0)}
         </Text>
       </GlassPanel>
 
@@ -63,7 +83,8 @@ export function AddFundsScreen({navigation}: AddFundsScreenProps) {
           placeholder="20"
           value={amount}
         />
-        <AppButton onPress={submit} title="Agregar saldo" />
+        {formError ? <Text style={styles.error}>{formError}</Text> : null}
+        <AppButton loading={mutation.isPending} onPress={submit} title="Agregar saldo" />
       </View>
     </Screen>
   );
@@ -100,5 +121,9 @@ const styles = StyleSheet.create({
   },
   presetButton: {
     minWidth: '47%',
+  },
+  error: {
+    color: colors.danger,
+    fontSize: 14,
   },
 });

@@ -7,13 +7,18 @@ import type {
   PaymentMethod,
   PaymentPreview,
   PaymentStatus,
-  User,
 } from '../types/domain';
 
 type PaymentResponse = {
   id: string;
+  userId?: string;
   user: string;
+  busId?: string;
   bus: string;
+  busPlate?: string;
+  routeName?: string;
+  routeOrigin?: string;
+  routeDestination?: string;
   amount: number;
   date: string;
   status: PaymentStatus;
@@ -39,8 +44,14 @@ export type PaymentListFilters = {
 function mapPaymentResponse(payment: PaymentResponse): Payment {
   return {
     id: payment.id,
+    userId: payment.userId,
     userName: payment.user,
+    busId: payment.busId,
     busCode: payment.bus,
+    busPlate: payment.busPlate,
+    routeName: payment.routeName,
+    routeOrigin: payment.routeOrigin,
+    routeDestination: payment.routeDestination,
     amount: payment.amount,
     date: payment.date,
     status: payment.status,
@@ -48,31 +59,9 @@ function mapPaymentResponse(payment: PaymentResponse): Payment {
   };
 }
 
-async function enrichPayment(payment: Payment) {
-  const bus = await findBusByCode(payment.busCode);
-
-  if (!bus) {
-    return payment;
-  }
-
-  return {
-    ...payment,
-    busId: bus.id,
-    busCode: bus.code,
-    busPlate: bus.plate,
-    routeId: bus.route?.id,
-    routeName: bus.route?.name,
-    routeOrigin: bus.route?.origin,
-    routeDestination: bus.route?.destination,
-  } satisfies Payment;
-}
-
 export async function getPaymentPreview(busCode: string): Promise<PaymentPreview> {
   try {
-    const [bus, fare] = await Promise.all([
-      findBusByCode(busCode),
-      getActiveFare(),
-    ]);
+    const [bus, fare] = await Promise.all([findBusByCode(busCode), getActiveFare()]);
 
     if (!bus || bus.status !== 'ACTIVE') {
       throw new Error('No encontramos un bus activo para este QR.');
@@ -88,31 +77,10 @@ export async function getPaymentPreview(busCode: string): Promise<PaymentPreview
   }
 }
 
-export async function createPayment(
-  input: CreatePaymentInput,
-  options?: {
-    currentUser?: User;
-    preview?: PaymentPreview;
-  },
-) {
+export async function createPayment(input: CreatePaymentInput) {
   try {
     const {data} = await apiClient.post<PaymentResponse>('/payments', input);
-    const mappedPayment = mapPaymentResponse(data);
-    const previewBus = options?.preview?.bus;
-
-    return {
-      ...mappedPayment,
-      userId: options?.currentUser?.id ?? input.userId,
-      userName: options?.currentUser?.name ?? mappedPayment.userName,
-      busId: previewBus?.id ?? input.busId,
-      busCode: previewBus?.code ?? mappedPayment.busCode,
-      busPlate: previewBus?.plate,
-      routeId: previewBus?.route?.id,
-      routeName: previewBus?.route?.name,
-      routeOrigin: previewBus?.route?.origin,
-      routeDestination: previewBus?.route?.destination,
-      externalReference: input.externalReference,
-    } satisfies Payment;
+    return mapPaymentResponse(data);
   } catch (error) {
     throw new Error(getErrorMessage(error, 'No fue posible registrar el pago.'));
   }
@@ -131,13 +99,9 @@ export async function listPayments(filters: PaymentListFilters = {}) {
       },
     });
 
-    const content = await Promise.all(
-      data.content.map(payment => enrichPayment(mapPaymentResponse(payment))),
-    );
-
     return {
       ...data,
-      content,
+      content: data.content.map(mapPaymentResponse),
     } satisfies PageResponse<Payment>;
   } catch (error) {
     throw new Error(getErrorMessage(error, 'No fue posible cargar los pagos.'));
@@ -147,7 +111,7 @@ export async function listPayments(filters: PaymentListFilters = {}) {
 export async function getPaymentById(paymentId: string) {
   try {
     const {data} = await apiClient.get<PaymentResponse>(`/payments/${paymentId}`);
-    return enrichPayment(mapPaymentResponse(data));
+    return mapPaymentResponse(data);
   } catch (error) {
     throw new Error(getErrorMessage(error, 'No fue posible cargar el detalle del pago.'));
   }

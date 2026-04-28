@@ -1,16 +1,13 @@
 import { apiClient } from './apiClient';
 import { getErrorMessage } from './apiErrors';
-import type {
-  Bus,
-  BusRoute,
-  Fare,
-  OperationalStatus,
-  PageResponse,
-} from '../types/domain';
+import type { Bus, BusRoute, Fare, OperationalStatus, PageResponse } from '../types/domain';
 
 type BusRouteSummaryResponse = {
   id: string;
   name: string;
+  origin?: string;
+  destination?: string;
+  status?: OperationalStatus;
 };
 
 type BusResponse = {
@@ -19,14 +16,6 @@ type BusResponse = {
   code: string;
   capacity?: number;
   route?: BusRouteSummaryResponse | null;
-  status: OperationalStatus;
-};
-
-type RouteResponse = {
-  id: string;
-  name: string;
-  origin: string;
-  destination: string;
   status: OperationalStatus;
 };
 
@@ -39,10 +28,13 @@ type FareResponse = {
   status: OperationalStatus;
 };
 
-const routeCache = new Map<string, Promise<BusRoute>>();
 const busByCodeCache = new Map<string, Promise<Bus | null>>();
 
-function mapRoute(route: RouteResponse): BusRoute {
+function mapRoute(route?: BusRouteSummaryResponse | null): BusRoute | null {
+  if (!route) {
+    return null;
+  }
+
   return {
     id: route.id,
     name: route.name,
@@ -52,40 +44,13 @@ function mapRoute(route: RouteResponse): BusRoute {
   };
 }
 
-async function getRoute(routeId: string) {
-  let cachedRoute = routeCache.get(routeId);
-
-  if (!cachedRoute) {
-    cachedRoute = apiClient
-      .get<RouteResponse>(`/routes/${routeId}`)
-      .then(({data}) => mapRoute(data))
-      .catch(error => {
-        routeCache.delete(routeId);
-        throw new Error(getErrorMessage(error, 'No fue posible cargar la ruta.'));
-      });
-
-    routeCache.set(routeId, cachedRoute);
-  }
-
-  return cachedRoute;
-}
-
-async function enrichBus(bus: BusResponse): Promise<Bus> {
-  const route = bus.route ? await getRoute(bus.route.id) : null;
-
+function mapBus(bus: BusResponse): Bus {
   return {
     id: bus.id,
     plate: bus.plate,
     code: bus.code,
     capacity: bus.capacity,
-    route: route
-      ? route
-      : bus.route
-        ? {
-            id: bus.route.id,
-            name: bus.route.name,
-          }
-        : null,
+    route: mapRoute(bus.route),
     status: bus.status,
   };
 }
@@ -107,23 +72,8 @@ export async function findBusByCode(busCode: string) {
 
   if (!cachedBus) {
     cachedBus = apiClient
-      .get<PageResponse<BusResponse>>('/buses', {
-        params: {
-          search: normalizedCode,
-          size: 20,
-        },
-      })
-      .then(async ({data}) => {
-        const match =
-          data.content.find(bus => bus.code.trim().toUpperCase() === normalizedCode) ??
-          data.content[0];
-
-        if (!match) {
-          return null;
-        }
-
-        return enrichBus(match);
-      })
+      .get<BusResponse>(`/buses/by-code/${encodeURIComponent(normalizedCode)}`)
+      .then(({data}) => mapBus(data))
       .catch(error => {
         busByCodeCache.delete(normalizedCode);
         throw new Error(getErrorMessage(error, 'No fue posible consultar el bus.'));
@@ -145,7 +95,7 @@ export async function listActiveBuses(limit = 6) {
       },
     });
 
-    return Promise.all(data.content.map(enrichBus));
+    return data.content.map(mapBus);
   } catch (error) {
     throw new Error(getErrorMessage(error, 'No fue posible cargar los buses activos.'));
   }

@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -8,9 +8,9 @@ import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
 import { usePaymentPreview } from '../../hooks/usePaymentPreview';
 import { createPayment } from '../../services/paymentService';
+import { getWallet } from '../../services/walletService';
 import { useAuthStore } from '../../store/authStore';
 import { usePaymentStore } from '../../store/paymentStore';
-import { useWalletStore } from '../../store/walletStore';
 import { colors } from '../../theme/colors';
 import { formatCurrency } from '../../utils/format';
 import type { PaymentPreviewScreenProps } from '../../types/navigation';
@@ -20,7 +20,10 @@ export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenPr
   const savePayment = usePaymentStore(state => state.savePayment);
   const queryClient = useQueryClient();
   const {data, error, isLoading, refetch} = usePaymentPreview(route.params.busCode);
-  const balance = useWalletStore(state => state.balance);
+  const {data: wallet} = useQuery({
+    queryKey: ['wallet'],
+    queryFn: getWallet,
+  });
   const [paymentError, setPaymentError] = useState('');
   const mutation = useMutation({
     mutationFn: async () => {
@@ -28,23 +31,22 @@ export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenPr
         throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
       }
 
-      return createPayment(
-        {
-          userId: user.id,
-          busId: data.bus.id,
-          amount: data.amount,
-          method: 'QR',
-          externalReference: `mobile-${Date.now()}`,
-        },
-        {
-          currentUser: user,
-          preview: data,
-        },
-      );
+      if ((wallet?.balance ?? 0) < data.amount) {
+        throw new Error('Saldo insuficiente. Agrega fondos para completar el pago.');
+      }
+
+      return createPayment({
+        userId: user.id,
+        busId: data.bus.id,
+        amount: data.amount,
+        method: 'WALLET',
+        externalReference: `mobile-${Date.now()}`,
+      });
     },
-    onSuccess: payment => {
+    onSuccess: async payment => {
       savePayment(payment);
-      queryClient.invalidateQueries({queryKey: ['payments']}).catch(() => undefined);
+      await queryClient.invalidateQueries({queryKey: ['payments']});
+      await queryClient.invalidateQueries({queryKey: ['wallet']});
       navigation.replace('PaymentConfirmation', {
         paymentId: payment.id,
         payment,
@@ -92,7 +94,7 @@ export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenPr
       <View style={styles.header}>
         <Text style={styles.title}>Confirma tu viaje</Text>
         <Text style={styles.subtitle}>
-          El pago se registrará directamente en backend con método QR.
+          El pago se registrará en backend usando tu billetera de pasajero.
         </Text>
       </View>
 
@@ -102,13 +104,20 @@ export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenPr
         <InfoRow label="Origen" value={data.bus.route?.origin ?? 'No disponible'} />
         <InfoRow label="Destino" value={data.bus.route?.destination ?? 'No disponible'} />
         <InfoRow label="Tarifa" value={data.fare.name} />
-        <InfoRow label="Método" value="QR" />
-        <InfoRow label="Saldo local" value={formatCurrency(balance)} />
+        <InfoRow label="Método" value="WALLET" />
+        <InfoRow label="Saldo disponible" value={formatCurrency(wallet?.balance ?? 0)} />
         <InfoRow label="Monto" strong value={formatCurrency(data.amount)} />
       </View>
 
       {paymentError ? <Text style={styles.error}>{paymentError}</Text> : null}
       <AppButton loading={mutation.isPending} onPress={confirm} title="Confirmar pago" />
+      {(wallet?.balance ?? 0) < data.amount || paymentError.includes('Saldo insuficiente') ? (
+        <AppButton
+          onPress={() => navigation.navigate('AddFunds')}
+          title="Agregar saldo"
+          variant="secondary"
+        />
+      ) : null}
       <AppButton onPress={() => navigation.goBack()} title="Cancelar" variant="ghost" />
     </Screen>
   );

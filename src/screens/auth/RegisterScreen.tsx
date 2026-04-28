@@ -6,10 +6,12 @@ import { AppButton } from '../../components/AppButton';
 import { AppTextInput } from '../../components/AppTextInput';
 import { Screen } from '../../components/Screen';
 import { register } from '../../services/authService';
+import { useAuthStore } from '../../store/authStore';
 import { colors } from '../../theme/colors';
 import type { RegisterScreenProps } from '../../types/navigation';
 
 export function RegisterScreen(_: RegisterScreenProps) {
+  const signIn = useAuthStore(state => state.signIn);
   const [nombre, setNombre] = useState('');
   const [correo, setCorreo] = useState('');
   const [password, setPassword] = useState('');
@@ -17,6 +19,7 @@ export function RegisterScreen(_: RegisterScreenProps) {
 
   const mutation = useMutation({
     mutationFn: register,
+    onSuccess: result => signIn(result.user, result.token),
     onError: error =>
       setFormError(error instanceof Error ? error.message : 'No fue posible registrar la cuenta.'),
   });
@@ -38,10 +41,7 @@ export function RegisterScreen(_: RegisterScreenProps) {
     <Screen>
       <View style={styles.header}>
         <Text style={styles.title}>Crea tu cuenta de pasajero</Text>
-        <Text style={styles.subtitle}>
-          El backend actual no expone registro público. Usa esta pantalla para validar tus
-          datos y luego solicita la creación del usuario al equipo de operaciones.
-        </Text>
+        <Text style={styles.subtitle}>Tu acceso y tus pagos quedarán asociados a este perfil.</Text>
       </View>
 
       <View style={styles.form}>
@@ -67,11 +67,7 @@ export function RegisterScreen(_: RegisterScreenProps) {
           value={password}
         />
         {formError ? <Text style={styles.error}>{formError}</Text> : null}
-        <AppButton
-          loading={mutation.isPending}
-          onPress={submit}
-          title="Validar disponibilidad"
-        />
+        <AppButton loading={mutation.isPending} onPress={submit} title="Registrarme" />
       </View>
     </Screen>
   );
