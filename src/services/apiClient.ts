@@ -1,7 +1,15 @@
 import axios from 'axios';
 
+function normalizeBaseUrl(baseUrl?: string) {
+  if (!baseUrl) {
+    return 'http://localhost:8080/api/v1';
+  }
+
+  return baseUrl.replace(/\/+$/, '');
+}
+
 export const apiClient = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_BASE_URL ?? 'https://api.example.com',
+  baseURL: normalizeBaseUrl(process.env.EXPO_PUBLIC_API_BASE_URL),
   timeout: 10_000,
   headers: {
     'Content-Type': 'application/json',

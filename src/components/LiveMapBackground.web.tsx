@@ -18,6 +18,7 @@ import { liveBusMarkers, zacapaCenter } from '../mocks/liveBuses';
 import type { CurrentLocation } from '../hooks/useCurrentLocation';
 import { useThemeStore } from '../store/themeStore';
 import { getThemeColors } from '../theme/colors';
+import type { LiveBusMarker } from '../types/map';
 
 const busIcon = L.divIcon({
   className: 'buspay-marker',
@@ -61,6 +62,7 @@ type LiveMapBackgroundProps = {
   targetScreenRatio?: number;
   onMapInteract?: () => void;
   recenterSignal?: number;
+  markers?: LiveBusMarker[];
 };
 
 function MapInteractionLayer({onMapInteract}: {onMapInteract?: () => void}) {
@@ -123,6 +125,7 @@ export function LiveMapBackground({
   targetScreenRatio: _targetScreenRatio,
   onMapInteract,
   recenterSignal,
+  markers = liveBusMarkers,
 }: LiveMapBackgroundProps) {
   const mode = useThemeStore(state => state.mode);
   const palette = getThemeColors(mode);
@@ -281,7 +284,7 @@ export function LiveMapBackground({
           position={[currentLocation.latitude, currentLocation.longitude]}>
           <Popup>Ubicación actual</Popup>
         </Marker>
-        {liveBusMarkers.map((bus, index) => (
+        {markers.map((bus, index) => (
           <Fragment key={bus.id}>
             <CircleMarker
               center={[bus.latitude, bus.longitude]}
@@ -308,11 +311,11 @@ export function LiveMapBackground({
               icon={busIcon}
               position={[bus.latitude, bus.longitude]}>
               <Popup>
-                <strong>{bus.codigo}</strong>
+                <strong>{bus.code}</strong>
                 <br />
                 {bus.routeName}
                 <br />
-                {bus.heading} · {bus.etaMinutes} min
+                {bus.plate ?? 'Sin placa'} · {bus.status}
               </Popup>
             </Marker>
           </Fragment>

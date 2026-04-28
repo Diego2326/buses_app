@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 
 import { setAuthToken } from '../services/apiClient';
+import { getCurrentUser, logout } from '../services/authService';
 import type { User } from '../types/domain';
 
 const AUTH_STORAGE_KEY = 'passenger-auth';
@@ -32,11 +33,20 @@ export const useAuthStore = create<AuthState>()(set => ({
 
       if (storedAuth?.token) {
         setAuthToken(storedAuth.token);
+        const user = await getCurrentUser();
+        const nextAuth = {user, token: storedAuth.token};
+
+        set({
+          ...nextAuth,
+          hydrated: true,
+        });
+        await AsyncStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextAuth));
+        return;
       }
 
       set({
-        user: storedAuth?.user,
-        token: storedAuth?.token,
+        user: undefined,
+        token: undefined,
         hydrated: true,
       });
     } catch {
@@ -51,10 +61,16 @@ export const useAuthStore = create<AuthState>()(set => ({
   },
   signOut: async () => {
     try {
+      await logout();
+    } catch {
+      // Clear local session even if the backend logout request fails.
+    }
+
+    try {
       await AsyncStorage.removeItem(AUTH_STORAGE_KEY);
     } finally {
-        setAuthToken(undefined);
-        set({user: undefined, token: undefined});
+      setAuthToken(undefined);
+      set({user: undefined, token: undefined});
     }
   },
   setHydrated: hydrated => set({hydrated}),

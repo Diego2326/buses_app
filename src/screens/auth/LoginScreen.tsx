@@ -12,14 +12,15 @@ import type { LoginScreenProps } from '../../types/navigation';
 
 export function LoginScreen({navigation}: LoginScreenProps) {
   const signIn = useAuthStore(state => state.signIn);
-  const [correo, setCorreo] = useState('ana.rodriguez@example.com');
-  const [password, setPassword] = useState('123456');
+  const [correo, setCorreo] = useState('');
+  const [password, setPassword] = useState('');
   const [formError, setFormError] = useState('');
 
   const mutation = useMutation({
     mutationFn: login,
     onSuccess: result => signIn(result.user, result.token),
-    onError: error => setFormError(error.message),
+    onError: error =>
+      setFormError(error instanceof Error ? error.message : 'No fue posible iniciar sesión.'),
   });
 
   const submit = () => {
@@ -28,7 +29,10 @@ export function LoginScreen({navigation}: LoginScreenProps) {
       setFormError('Ingresa un correo válido y una contraseña de al menos 6 caracteres.');
       return;
     }
-    mutation.mutate({correo, password});
+    mutation.mutate({
+      email: correo.trim().toLowerCase(),
+      password,
+    });
   };
 
   return (
@@ -58,7 +62,7 @@ export function LoginScreen({navigation}: LoginScreenProps) {
         <AppButton loading={mutation.isPending} onPress={submit} title="Entrar" />
         <AppButton
           onPress={() => navigation.navigate('Register')}
-          title="Crear cuenta"
+          title="Sobre el registro"
           variant="ghost"
         />
       </View>

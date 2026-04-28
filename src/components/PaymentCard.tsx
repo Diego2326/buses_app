@@ -16,11 +16,14 @@ export function PaymentCard({payment, onPress}: PaymentCardProps) {
       onPress={onPress}
       style={({pressed}) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.header}>
-        <Text style={styles.route}>{payment.bus.ruta.nombre}</Text>
-        <Text style={styles.amount}>{formatCurrency(payment.monto)}</Text>
+        <Text style={styles.route}>{payment.routeName ?? 'Ruta sin asignar'}</Text>
+        <Text style={styles.amount}>{formatCurrency(payment.amount)}</Text>
       </View>
-      <Text style={styles.meta}>{payment.bus.codigo} · {payment.bus.placa}</Text>
-      <Text style={styles.meta}>{formatDateTime(payment.fecha)}</Text>
+      <Text style={styles.meta}>
+        {payment.busCode}
+        {payment.busPlate ? ` · ${payment.busPlate}` : ''}
+      </Text>
+      <Text style={styles.meta}>{formatDateTime(payment.date)}</Text>
     </Pressable>
   );
 }
