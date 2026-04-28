@@ -1,5 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 
+import { useQuery } from '@tanstack/react-query';
 import { useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -18,9 +19,9 @@ import { LiveMapBackground } from '../../components/LiveMapBackground';
 import { PaymentCard } from '../../components/PaymentCard';
 import { StateView } from '../../components/StateView';
 import { useCurrentLocation } from '../../hooks/useCurrentLocation';
-import { liveBusMarkers } from '../../mocks/liveBuses';
+import { getLiveBusMarkers } from '../../services/operationsService';
+import { listPayments } from '../../services/paymentService';
 import { useAuthStore } from '../../store/authStore';
-import { usePaymentStore } from '../../store/paymentStore';
 import { useThemeStore } from '../../store/themeStore';
 import { useWalletStore } from '../../store/walletStore';
 import { getThemeColors } from '../../theme/colors';
@@ -30,14 +31,22 @@ import type { HomeScreenProps } from '../../types/navigation';
 export function HomeScreen({navigation}: HomeScreenProps) {
   const {height, width} = useWindowDimensions();
   const user = useAuthStore(state => state.user);
-  const payments = usePaymentStore(state => state.payments);
-  const latestPayment = payments[0];
   const balance = useWalletStore(state => state.balance);
   const mode = useThemeStore(state => state.mode);
   const palette = getThemeColors(mode);
   const isDark = mode === 'dark';
   const currentLocation = useCurrentLocation();
   const isLandscape = width > height;
+  const {data: paymentsResponse} = useQuery({
+    queryKey: ['payments', user?.id, 'home'],
+    queryFn: () => listPayments({userId: user?.id, size: 1}),
+    enabled: Boolean(user?.id),
+  });
+  const {data: liveBuses = []} = useQuery({
+    queryKey: ['live-buses'],
+    queryFn: getLiveBusMarkers,
+  });
+  const latestPayment = paymentsResponse?.content[0];
 
   const compactProgress = useRef(new Animated.Value(0)).current;
   const [sheetSnap, setSheetSnap] = useState<'expanded' | 'compact'>('expanded');
@@ -124,6 +133,7 @@ export function HomeScreen({navigation}: HomeScreenProps) {
       <LiveMapBackground
         bottomOffsetPx={mapBottomOffsetPx}
         currentLocation={currentLocation}
+        markers={liveBuses}
         onMapInteract={compactPanel}
         recenterSignal={mapRecenterSignal}
         targetScreenRatio={targetScreenRatio}
@@ -154,7 +164,7 @@ export function HomeScreen({navigation}: HomeScreenProps) {
               pressed && styles.pressed,
             ]}>
             <Text style={[styles.avatarText, {color: palette.primary}]}>
-              {(user?.nombre ?? 'P').slice(0, 1).toUpperCase()}
+              {(user?.name ?? 'P').slice(0, 1).toUpperCase()}
             </Text>
           </Pressable>
           <Pressable
@@ -196,7 +206,7 @@ export function HomeScreen({navigation}: HomeScreenProps) {
           <View style={styles.header}>
             <View>
               <Text style={[styles.greeting, {color: palette.text}]}>
-                Hola, {user?.nombre ?? 'pasajero'}
+                Hola, {user?.name ?? 'pasajero'}
               </Text>
               <Text style={[styles.subtitle, {color: palette.textMuted}]}>
                 Elige un bus, escanea y paga tu viaje.
@@ -227,7 +237,7 @@ export function HomeScreen({navigation}: HomeScreenProps) {
             <View style={[styles.balanceCard, isLandscape && styles.balanceCardLandscape]}>
               <View>
                 <Text style={[styles.balanceLabel, {color: palette.textMuted}]}>
-                  Saldo actual
+                  Saldo local
                 </Text>
                 <Text style={[styles.balanceValue, {color: palette.text}]}>
                   {formatCurrency(balance)}
@@ -278,7 +288,7 @@ export function HomeScreen({navigation}: HomeScreenProps) {
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, {color: palette.text}]}>Cerca de ti</Text>
               <View style={styles.busList}>
-                {liveBusMarkers.map(bus => (
+                {liveBuses.map(bus => (
                   <View
                     key={bus.id}
                     style={[
@@ -291,11 +301,11 @@ export function HomeScreen({navigation}: HomeScreenProps) {
                     <View style={[styles.busIcon, {backgroundColor: palette.primary}]}>
                       <Text
                         style={[styles.busIconText, {color: isDark ? '#06211E' : '#FFFFFF'}]}>
-                        {bus.codigo.replace('BUS-', '')}
+                        {bus.code.replace('BUS-', '')}
                       </Text>
                     </View>
                     <View style={styles.busInfo}>
-                      <Text style={[styles.busCode, {color: palette.text}]}>{bus.codigo}</Text>
+                      <Text style={[styles.busCode, {color: palette.text}]}>{bus.code}</Text>
                       <Text
                         numberOfLines={1}
                         style={[styles.busRoute, {color: palette.textMuted}]}>
@@ -303,10 +313,15 @@ export function HomeScreen({navigation}: HomeScreenProps) {
                       </Text>
                     </View>
                     <Text style={[styles.eta, {color: palette.accent}]}>
-                      {bus.etaMinutes} min
+                      {bus.status}
                     </Text>
                   </View>
                 ))}
+                {liveBuses.length === 0 ? (
+                  <Text style={[styles.busRoute, {color: palette.textMuted}]}>
+                    No hay buses activos reportados en este momento.
+                  </Text>
+                ) : null}
               </View>
             </View>
 
@@ -315,7 +330,10 @@ export function HomeScreen({navigation}: HomeScreenProps) {
               {latestPayment ? (
                 <PaymentCard
                   onPress={() =>
-                    navigation.navigate('PaymentDetail', {paymentId: latestPayment.id})
+                    navigation.navigate('PaymentDetail', {
+                      paymentId: latestPayment.id,
+                      payment: latestPayment,
+                    })
                   }
                   payment={latestPayment}
                 />

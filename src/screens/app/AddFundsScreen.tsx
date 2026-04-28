@@ -34,7 +34,7 @@ export function AddFundsScreen({navigation}: AddFundsScreenProps) {
   return (
     <Screen style={styles.screen}>
       <GlassPanel style={styles.balanceCard}>
-        <Text style={[styles.label, {color: palette.textMuted}]}>Saldo actual</Text>
+        <Text style={[styles.label, {color: palette.textMuted}]}>Saldo local</Text>
         <Text style={[styles.balance, {color: palette.text}]}>
           {formatCurrency(balance)}
         </Text>

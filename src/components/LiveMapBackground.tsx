@@ -6,6 +6,7 @@ import type { CurrentLocation } from '../hooks/useCurrentLocation';
 import { liveBusMarkers, zacapaCenter } from '../mocks/liveBuses';
 import { useThemeStore } from '../store/themeStore';
 import { getThemeColors } from '../theme/colors';
+import type { LiveBusMarker } from '../types/map';
 
 type LiveMapBackgroundProps = {
   currentLocation: CurrentLocation;
@@ -13,6 +14,7 @@ type LiveMapBackgroundProps = {
   targetScreenRatio?: number;
   onMapInteract?: () => void;
   recenterSignal?: number;
+  markers?: LiveBusMarker[];
 };
 
 export function LiveMapBackground({
@@ -21,6 +23,7 @@ export function LiveMapBackground({
   targetScreenRatio = 0.42,
   onMapInteract,
   recenterSignal: _recenterSignal,
+  markers = liveBusMarkers,
 }: LiveMapBackgroundProps) {
   const mode = useThemeStore(state => state.mode);
   const palette = getThemeColors(mode);
@@ -76,7 +79,7 @@ export function LiveMapBackground({
         ]}>
         <Text style={[styles.centerText, {color: palette.text}]}>Zacapa</Text>
       </View>
-      {liveBusMarkers.map((bus, index) => (
+      {markers.map((bus, index) => (
         <View
           key={bus.id}
           style={[
@@ -94,7 +97,7 @@ export function LiveMapBackground({
               styles.busText,
               {color: mode === 'dark' ? '#06211E' : '#FFFFFF'},
             ]}>
-            {bus.codigo.replace('BUS-', '')}
+            {bus.code.replace('BUS-', '')}
           </Text>
         </View>
       ))}

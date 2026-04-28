@@ -1,3 +1,4 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -6,6 +7,7 @@ import { InfoRow } from '../../components/InfoRow';
 import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
 import { usePaymentPreview } from '../../hooks/usePaymentPreview';
+import { createPayment } from '../../services/paymentService';
 import { useAuthStore } from '../../store/authStore';
 import { usePaymentStore } from '../../store/paymentStore';
 import { useWalletStore } from '../../store/walletStore';
@@ -15,11 +17,46 @@ import type { PaymentPreviewScreenProps } from '../../types/navigation';
 
 export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenProps) {
   const user = useAuthStore(state => state.user);
-  const addPayment = usePaymentStore(state => state.addPaymentFromPreview);
-  const debit = useWalletStore(state => state.debit);
+  const savePayment = usePaymentStore(state => state.savePayment);
+  const queryClient = useQueryClient();
   const {data, error, isLoading, refetch} = usePaymentPreview(route.params.busCode);
   const balance = useWalletStore(state => state.balance);
   const [paymentError, setPaymentError] = useState('');
+  const mutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !data) {
+        throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
+      }
+
+      return createPayment(
+        {
+          userId: user.id,
+          busId: data.bus.id,
+          amount: data.amount,
+          method: 'QR',
+          externalReference: `mobile-${Date.now()}`,
+        },
+        {
+          currentUser: user,
+          preview: data,
+        },
+      );
+    },
+    onSuccess: payment => {
+      savePayment(payment);
+      queryClient.invalidateQueries({queryKey: ['payments']}).catch(() => undefined);
+      navigation.replace('PaymentConfirmation', {
+        paymentId: payment.id,
+        payment,
+      });
+    },
+    onError: mutationError =>
+      setPaymentError(
+        mutationError instanceof Error
+          ? mutationError.message
+          : 'No fue posible registrar el pago.',
+      ),
+  });
 
   if (isLoading) {
     return (
@@ -47,43 +84,31 @@ export function PaymentPreviewScreen({navigation, route}: PaymentPreviewScreenPr
     }
 
     setPaymentError('');
-    const debited = debit(data.monto);
-
-    if (!debited) {
-      setPaymentError('Saldo insuficiente. Agrega fondos para completar el pago.');
-      return;
-    }
-
-    const payment = addPayment(data, user);
-    navigation.replace('PaymentConfirmation', {paymentId: payment.id});
+    mutation.mutate();
   };
 
   return (
     <Screen>
       <View style={styles.header}>
         <Text style={styles.title}>Confirma tu viaje</Text>
-        <Text style={styles.subtitle}>La API validará este QR en backend cuando se integre.</Text>
+        <Text style={styles.subtitle}>
+          El pago se registrará directamente en backend con método QR.
+        </Text>
       </View>
 
       <View style={styles.card}>
-        <InfoRow label="Bus" value={`${data.bus.codigo} · ${data.bus.placa}`} />
-        <InfoRow label="Ruta" value={data.bus.ruta.nombre} />
-        <InfoRow label="Origen" value={data.bus.ruta.origen} />
-        <InfoRow label="Destino" value={data.bus.ruta.destino} />
-        <InfoRow label="Tarifa" value={data.tarifa.nombre} />
-        <InfoRow label="Saldo disponible" value={formatCurrency(balance)} />
-        <InfoRow label="Monto" strong value={formatCurrency(data.monto)} />
+        <InfoRow label="Bus" value={`${data.bus.code} · ${data.bus.plate}`} />
+        <InfoRow label="Ruta" value={data.bus.route?.name ?? 'Ruta sin asignar'} />
+        <InfoRow label="Origen" value={data.bus.route?.origin ?? 'No disponible'} />
+        <InfoRow label="Destino" value={data.bus.route?.destination ?? 'No disponible'} />
+        <InfoRow label="Tarifa" value={data.fare.name} />
+        <InfoRow label="Método" value="QR" />
+        <InfoRow label="Saldo local" value={formatCurrency(balance)} />
+        <InfoRow label="Monto" strong value={formatCurrency(data.amount)} />
       </View>
 
       {paymentError ? <Text style={styles.error}>{paymentError}</Text> : null}
-      <AppButton onPress={confirm} title="Confirmar pago" />
-      {paymentError ? (
-        <AppButton
-          onPress={() => navigation.navigate('AddFunds')}
-          title="Agregar saldo"
-          variant="secondary"
-        />
-      ) : null}
+      <AppButton loading={mutation.isPending} onPress={confirm} title="Confirmar pago" />
       <AppButton onPress={() => navigation.goBack()} title="Cancelar" variant="ghost" />
     </Screen>
   );

@@ -1,9 +1,11 @@
+import { useQuery } from '@tanstack/react-query';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '../../components/AppButton';
 import { InfoRow } from '../../components/InfoRow';
 import { Screen } from '../../components/Screen';
 import { StateView } from '../../components/StateView';
+import { getPaymentById } from '../../services/paymentService';
 import { usePaymentStore } from '../../store/paymentStore';
 import { colors } from '../../theme/colors';
 import { formatCurrency } from '../../utils/format';
@@ -13,12 +15,29 @@ export function PaymentConfirmationScreen({
   navigation,
   route,
 }: PaymentConfirmationScreenProps) {
-  const payment = usePaymentStore(state => state.getPaymentById(route.params.paymentId));
+  const storedPayment = usePaymentStore(state => state.getPaymentById(route.params.paymentId));
+  const initialPayment = route.params.payment ?? storedPayment;
+  const {data: payment, isLoading, error} = useQuery({
+    queryKey: ['payment', route.params.paymentId],
+    queryFn: () => getPaymentById(route.params.paymentId),
+    initialData: initialPayment,
+  });
 
-  if (!payment) {
+  if (isLoading && !payment) {
     return (
       <Screen scroll={false}>
-        <StateView title="Pago no encontrado" description="Vuelve al inicio para continuar." />
+        <StateView loading title="Cargando pago" description="Consultando la transacción." />
+      </Screen>
+    );
+  }
+
+  if (error || !payment) {
+    return (
+      <Screen scroll={false}>
+        <StateView
+          title="Pago no encontrado"
+          description={error instanceof Error ? error.message : 'Vuelve al inicio para continuar.'}
+        />
         <AppButton onPress={() => navigation.replace('Home')} title="Ir al inicio" />
       </Screen>
     );
@@ -34,13 +53,21 @@ export function PaymentConfirmationScreen({
 
       <View style={styles.card}>
         <InfoRow label="Transacción" value={payment.id} />
-        <InfoRow label="Bus" value={`${payment.bus.codigo} · ${payment.bus.placa}`} />
-        <InfoRow label="Ruta" value={payment.bus.ruta.nombre} />
-        <InfoRow label="Monto" strong value={formatCurrency(payment.monto)} />
+        <InfoRow
+          label="Bus"
+          value={`${payment.busCode}${payment.busPlate ? ` · ${payment.busPlate}` : ''}`}
+        />
+        <InfoRow label="Ruta" value={payment.routeName ?? 'Ruta sin asignar'} />
+        <InfoRow label="Monto" strong value={formatCurrency(payment.amount)} />
       </View>
 
       <AppButton
-        onPress={() => navigation.replace('PaymentDetail', {paymentId: payment.id})}
+        onPress={() =>
+          navigation.replace('PaymentDetail', {
+            paymentId: payment.id,
+            payment,
+          })
+        }
         title="Ver detalle"
       />
       <AppButton onPress={() => navigation.popToTop()} title="Volver al inicio" variant="ghost" />

@@ -1,6 +1,6 @@
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
-import type { PaymentPreview } from './domain';
+import type { Payment, PaymentPreview } from './domain';
 
 export type AuthStackParamList = {
   Login: undefined;
@@ -12,9 +12,9 @@ export type AppStackParamList = {
   Scanner: undefined;
   AddFunds: undefined;
   PaymentPreview: { busCode: string };
-  PaymentConfirmation: { paymentId: string };
+  PaymentConfirmation: { paymentId: string; payment?: Payment };
   PaymentHistory: undefined;
-  PaymentDetail: { paymentId: string };
+  PaymentDetail: { paymentId: string; payment?: Payment };
   Profile: undefined;
 };
 

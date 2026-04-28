@@ -1,35 +1,21 @@
 import { create } from 'zustand';
 
-import { initialPayments } from '../mocks/domain';
-import type { Payment, PaymentMethod, PaymentPreview, User } from '../types/domain';
-import { createId } from '../utils/ids';
+import type { Payment } from '../types/domain';
 
 type PaymentState = {
-  payments: Payment[];
-  addPaymentFromPreview: (
-    preview: PaymentPreview,
-    user: User,
-    method?: PaymentMethod,
-  ) => Payment;
+  recentPayments: Record<string, Payment>;
+  savePayment: (payment: Payment) => void;
   getPaymentById: (paymentId: string) => Payment | undefined;
 };
 
 export const usePaymentStore = create<PaymentState>((set, get) => ({
-  payments: initialPayments,
-  addPaymentFromPreview: (preview, user, method = 'WALLET') => {
-    const payment: Payment = {
-      id: createId('PAY'),
-      usuario: user,
-      bus: preview.bus,
-      monto: preview.monto,
-      fecha: new Date().toISOString(),
-      estado: 'COMPLETED',
-      metodoPago: method,
-    };
-
-    set(state => ({payments: [payment, ...state.payments]}));
-    return payment;
-  },
-  getPaymentById: paymentId =>
-    get().payments.find(payment => payment.id === paymentId),
+  recentPayments: {},
+  savePayment: payment =>
+    set(state => ({
+      recentPayments: {
+        ...state.recentPayments,
+        [payment.id]: payment,
+      },
+    })),
+  getPaymentById: paymentId => get().recentPayments[paymentId],
 }));

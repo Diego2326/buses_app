@@ -2,55 +2,65 @@ import type { Bus, Fare, Payment, User } from '../types/domain';
 
 export const mockUser: User = {
   id: 'USR-001',
-  nombre: 'Ana Rodriguez',
-  correo: 'ana.rodriguez@example.com',
-  rol: 'PASSENGER',
-  estado: 'ACTIVE',
+  name: 'Ana Rodriguez',
+  email: 'ana.rodriguez@example.com',
+  role: 'PASSENGER',
+  status: 'ACTIVE',
 };
 
 export const mockBuses: Bus[] = [
   {
     id: 'BUS-ID-001',
-    placa: 'P-123FGH',
-    codigo: 'BUS-001',
-    ruta: {
+    plate: 'P-123FGH',
+    code: 'BUS-001',
+    route: {
       id: 'RUTA-01',
-      nombre: 'Centro - Terminal Norte',
-      origen: 'Parque Central',
-      destino: 'Terminal Norte',
+      name: 'Centro - Terminal Norte',
+      origin: 'Parque Central',
+      destination: 'Terminal Norte',
+      status: 'ACTIVE',
     },
-    estado: 'ACTIVE',
+    status: 'ACTIVE',
   },
   {
     id: 'BUS-ID-002',
-    placa: 'P-456JKL',
-    codigo: 'BUS-002',
-    ruta: {
+    plate: 'P-456JKL',
+    code: 'BUS-002',
+    route: {
       id: 'RUTA-02',
-      nombre: 'Zona 10 - Universidad',
-      origen: 'Zona 10',
-      destino: 'Ciudad Universitaria',
+      name: 'Zona 10 - Universidad',
+      origin: 'Zona 10',
+      destination: 'Ciudad Universitaria',
+      status: 'ACTIVE',
     },
-    estado: 'ACTIVE',
+    status: 'ACTIVE',
   },
 ];
 
 export const mockFare: Fare = {
   id: 'FARE-REGULAR-2026',
-  nombre: 'Tarifa urbana regular',
-  monto: 5,
-  vigencia: '2026-12-31',
-  estado: 'ACTIVE',
+  name: 'Tarifa urbana regular',
+  amount: 5,
+  validFrom: '2026-01-01',
+  validTo: '2026-12-31',
+  status: 'ACTIVE',
 };
 
 export const initialPayments: Payment[] = [
   {
     id: 'PAY-001',
-    usuario: mockUser,
-    bus: mockBuses[0],
-    monto: 5,
-    fecha: new Date(Date.now() - 86_400_000).toISOString(),
-    estado: 'COMPLETED',
-    metodoPago: 'WALLET',
+    userId: mockUser.id,
+    userName: mockUser.name,
+    busId: mockBuses[0].id,
+    busCode: mockBuses[0].code,
+    busPlate: mockBuses[0].plate,
+    routeId: mockBuses[0].route?.id,
+    routeName: mockBuses[0].route?.name,
+    routeOrigin: mockBuses[0].route?.origin,
+    routeDestination: mockBuses[0].route?.destination,
+    amount: 5,
+    date: new Date(Date.now() - 86_400_000).toISOString(),
+    status: 'COMPLETED',
+    method: 'WALLET',
   },
 ];

@@ -15,7 +15,7 @@ import type { ScannerScreenProps } from '../../types/navigation';
 
 export function ScannerScreen({navigation}: ScannerScreenProps) {
   const [permission, requestPermission] = useCameraPermissions();
-  const [busCode, setBusCode] = useState('BUS-001');
+  const [busCode, setBusCode] = useState('');
   const [error, setError] = useState('');
   const [scanned, setScanned] = useState(false);
   const mode = useThemeStore(state => state.mode);
@@ -27,8 +27,8 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
     const normalized = value.trim().toUpperCase();
     setError('');
 
-    if (!/^BUS-\d{3}$/.test(normalized)) {
-      setError('Usa un código de bus válido, por ejemplo BUS-001.');
+    if (!normalized.startsWith('BUS-') || normalized.length < 6) {
+      setError('Usa un código de bus válido, por ejemplo BUS-102.');
       return;
     }
 
@@ -127,7 +127,7 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
         ]}>
         <Text style={[styles.formTitle, {color: palette.text}]}>Ingreso manual</Text>
         <Text style={[styles.formDescription, {color: palette.textMuted}]}>
-          Si el QR no se lee, escribe el código con formato BUS-001.
+          Si el QR no se lee, escribe el código con formato BUS-102.
         </Text>
         {!permission?.granted ? (
           <AppButton
@@ -141,7 +141,7 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
           error={error}
           label="Código del bus"
           onChangeText={setBusCode}
-          placeholder="BUS-001"
+          placeholder="BUS-102"
           value={busCode}
         />
         <AppButton onPress={submit} title="Consultar tarifa" />
@@ -154,10 +154,10 @@ export function ScannerScreen({navigation}: ScannerScreenProps) {
         ) : null}
         <AppButton
           onPress={() => {
-            setBusCode('BUS-002');
-            navigation.navigate('PaymentPreview', {busCode: 'BUS-002'});
+            setBusCode('BUS-102');
+            navigation.navigate('PaymentPreview', {busCode: 'BUS-102'});
           }}
-          title="Usar ejemplo BUS-002"
+          title="Usar ejemplo BUS-102"
           variant="ghost"
         />
       </View>
