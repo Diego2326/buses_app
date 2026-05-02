@@ -2,7 +2,7 @@ import axios from 'axios';
 
 function normalizeBaseUrl(baseUrl?: string) {
   if (!baseUrl) {
-    return 'http://localhost:8080/api/v1';
+    return 'https://buses-api-322217156017.northamerica-south1.run.app/api/v1';
   }
 
   return baseUrl.replace(/\/+$/, '');
